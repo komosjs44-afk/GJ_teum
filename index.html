@@ -1,0 +1,938 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>틈 T:EUM 프로토타입</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone shell centered on the page; a screen picker above it; inside, a scrolling screen and a tab bar */
+:root{
+  --page:#e6eae5; --bg:#f3f5f3; --surface:#ffffff; --surface-2:#eef1ee; --ink:#15201c; --muted:#4f5c56; --line:#d9e0db;
+  --green:#1a6b50; --green-soft:#e1efe8; --on-green:#ffffff;
+  --travel:#b4571c; --prep:#cf9f6e; --meal:#d4ad37;
+  --amber:#8a5a00; --amber-soft:#fff0d3; --amber-line:#e2a03a;
+  --warn:#9a4512; --warn-soft:#f6e7dc;
+  --night:#15201c; --night-2:#22302b; --night-ink:#eef3f1; --night-muted:#a3b3ac; --mint:#5fbf98; --mint-ink:#0e1a15;
+  --wall:#22352d;
+  --c1:#d7ece2; --c2:#dce6f6; --c3:#f3dce2; --c4:#e6e0f4; --c5:#ece6cf; --c6:#f6dfc9; --c7:#ffe9a8;
+  --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --page:#0b100e; --bg:#111815; --surface:#19221e; --surface-2:#202b26; --ink:#e6eee9; --muted:#9eada6; --line:#2c3833;
+  --green:#4fb48a; --green-soft:#1b3a2d; --on-green:#0b100e;
+  --travel:#e08a50; --prep:#c99a6c; --meal:#d6b04a;
+  --amber:#f0bd62; --amber-soft:#3a2d14; --amber-line:#c98a2a;
+  --warn:#eb9a66; --warn-soft:#3a281d;
+  --night:#0b100d; --night-2:#1a2520; --night-ink:#eef3f1; --night-muted:#93a69c; --mint:#5fbf98; --mint-ink:#0b100d;
+  --wall:#14211c;
+  --c1:#22382d; --c2:#25304a; --c3:#43282f; --c4:#332c47; --c5:#3a3524; --c6:#43301f; --c7:#4a3d14;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --page:#0b100e; --bg:#111815; --surface:#19221e; --surface-2:#202b26; --ink:#e6eee9; --muted:#9eada6; --line:#2c3833;
+  --green:#4fb48a; --green-soft:#1b3a2d; --on-green:#0b100e;
+  --travel:#e08a50; --prep:#c99a6c; --meal:#d6b04a;
+  --amber:#f0bd62; --amber-soft:#3a2d14; --amber-line:#c98a2a;
+  --warn:#eb9a66; --warn-soft:#3a281d;
+  --night:#0b100d; --night-2:#1a2520; --night-ink:#eef3f1; --night-muted:#93a69c; --mint:#5fbf98; --mint-ink:#0b100d;
+  --wall:#14211c;
+  --c1:#22382d; --c2:#25304a; --c3:#43282f; --c4:#332c47; --c5:#3a3524; --c6:#43301f; --c7:#4a3d14;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:18px 28px}
+button{font-family:inherit;color:inherit}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.top{max-width:420px;margin:0 auto 10px;display:grid;gap:8px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand b{font-size:17px;letter-spacing:-.01em}
+.brand small{font-size:12px;color:var(--muted)}
+.picker{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.picker button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer}
+.picker button.on{background:var(--green);border-color:var(--green);color:var(--on-green);font-weight:600}
+.reset{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:5px 10px;font-size:12px;cursor:pointer}
+.shell{max-width:420px;height:780px;margin:0 auto;background:var(--bg);border:1px solid var(--line);border-radius:30px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.screen{flex:1;overflow-y:auto;padding:22px 18px 20px;display:flex;flex-direction:column;gap:14px}
+.screen.night{background:var(--night);color:var(--night-ink)}
+.screen.home{background:var(--wall);color:#fff;padding:26px 18px 18px}
+.eyebrow{font-size:13px;color:var(--muted)}
+.night .eyebrow{color:var(--night-muted)}
+h1{font-size:27px;line-height:1.2;margin:2px 0 0;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+h2{font-size:16px;margin:0;font-weight:700}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sub{font-size:13px;color:var(--muted)}
+.night .sub{color:var(--night-muted)}
+.num{font-variant-numeric:tabular-nums}
+.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:600;cursor:pointer;background:var(--green);color:var(--on-green);font-size:15px}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.small{padding:7px 11px;font-size:13px;border-radius:10px}
+.btn.block{width:100%;padding:14px}
+.night .btn{background:var(--mint);color:var(--mint-ink)}
+.sheet label.btn{display:block;color:var(--on-green);font-size:15px;font-weight:600;text-align:center;cursor:pointer}
+.setlist{background:var(--surface);border-radius:16px;overflow:hidden}
+.setrow{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;padding:14px 14px;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font-size:15px}
+.setrow:last-child{border-bottom:0}
+.setrow .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex:none;background:var(--green-soft);color:var(--green)}
+.setrow .tx{flex:1;min-width:0}
+.setrow .tx b{display:block;font-weight:600}
+.setrow .chev{color:var(--muted);font-size:20px}
+.sleepviz{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
+.sleepviz span{display:block;height:100%}
+.iconbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;flex:none}
+.link{border:0;background:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px 0}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--line);border-radius:12px;padding:3px}
+.seg button{border:0;background:transparent;padding:8px;border-radius:9px;font-size:14px;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--ink);font-weight:600}
+.sum{background:var(--night);color:var(--night-ink);border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
+.sum .big{font-size:25px;font-weight:700}
+.sum small{color:var(--night-muted);font-size:12px;text-align:right}
+.delta{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;background:var(--green-soft);color:var(--green);margin-left:6px;vertical-align:middle}
+.delta.minus{background:var(--amber-soft);color:var(--amber)}
+.sum .delta{background:var(--mint);color:var(--mint-ink)}
+.sum .delta.minus{background:var(--amber-line);color:#2a1a00}
+.banner{background:var(--night);color:var(--night-ink);border-radius:12px;padding:10px 14px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.banner button{border:0;background:none;color:var(--mint);font-weight:700;cursor:pointer;padding:6px 0;font-size:13px;white-space:nowrap}
+.tl{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:start}
+.time{font-size:13px;color:var(--muted);padding-top:12px}
+.card{background:var(--surface);border-radius:14px;padding:12px 14px;min-width:0}
+.card h3{margin:0;font-size:16px;font-weight:600}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.late{background:var(--amber-soft);color:var(--amber)}
+.tag.dark{background:var(--night);color:var(--night-ink)}
+.tag.gray{background:var(--surface-2);color:var(--muted)}
+.shiftrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.shiftrow button{border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:6px 9px;font-size:13px;cursor:pointer}
+.shiftrow button.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.gap{border:1.5px dashed var(--line);background:transparent;border-radius:14px;padding:11px 14px;text-align:left;cursor:pointer;width:100%;min-width:0;font-size:inherit}
+.gap.live{border-color:var(--green);background:var(--green-soft)}
+.gap.changed{border-style:solid;border-width:2px}
+.gap .ttl{font-weight:700;color:var(--green)}
+.gap.zero .ttl{color:var(--muted)}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--line);margin:8px 0 6px}
+.bar span{display:block;height:100%}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.legend{display:grid;gap:7px;font-size:14px}
+.hero{font-size:52px;font-weight:700;color:var(--green);line-height:1;letter-spacing:-.02em}
+.strike{color:var(--muted);text-decoration:line-through;font-size:17px;margin-left:8px}
+.task{background:var(--surface);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;border:1.5px solid transparent;min-width:0}
+.task.first{border-color:var(--green)}
+.task.doing{border:2px solid var(--amber-line)}
+.task.done{opacity:.78}
+.task.done .name{text-decoration:line-through;color:var(--muted)}
+.task .body{flex:1;min-width:0}
+.task .name{font-weight:600}
+.rank{width:24px;height:24px;border-radius:7px;background:var(--surface-2);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.rank.top{background:var(--night);color:var(--night-ink)}
+.status{border:0;border-radius:99px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none}
+.status.todo{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.status.doing{background:var(--amber-soft);color:var(--amber)}
+.status.done{background:var(--green-soft);color:var(--green)}
+.status i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status.todo i{border:1.5px solid currentColor}
+.status.doing i{background:var(--amber-line)}
+.status.done i{background:currentColor}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.warn{color:var(--warn)}
+.okc{color:var(--green)}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:10px}
+.sheet label{font-size:13px;color:var(--muted);display:grid;gap:4px}
+.sheet input,.sheet select{font:inherit;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);width:100%;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding:6px 4px 8px}
+.tab{border:0;background:none;font-size:12px;color:var(--muted);padding:6px 0;cursor:pointer;display:grid;justify-items:center;gap:2px}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--green);font-weight:700}
+.toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);background:var(--night);color:var(--night-ink);padding:10px 16px;border-radius:12px;font-size:14px;width:max-content;max-width:calc(100% - 32px);z-index:5;box-shadow:0 6px 20px rgb(0 0 0 / .25)}
+/* home */
+.widget{background:var(--surface);color:var(--ink);border-radius:26px;padding:18px;display:grid;gap:12px}
+.widget.dark{background:var(--night);color:var(--night-ink);border:2px solid var(--mint)}
+.widget.dark.minus{border-color:var(--amber-line)}
+.widget.ask{border:2px solid var(--amber-line)}
+.wbig{font-size:42px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--mint)}
+.widget.minus .wbig{color:#f3c27a}
+.wrec{background:var(--night-2);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wbtns{display:flex;gap:8px;flex-wrap:wrap}
+.wbtns .btn{flex:1}
+.optbtn{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 6px;font-size:14px;font-weight:600;cursor:pointer;min-width:0}
+.optbtn.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.optbtn.amber{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+.preview{background:var(--green-soft);border-radius:14px;padding:12px 14px;display:grid;gap:4px}
+.preview.minus{background:var(--amber-soft)}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);row-gap:18px;justify-items:center}
+.app{display:grid;justify-items:center;gap:6px;font-size:12px;color:#e4ece8}
+.app i{width:58px;height:58px;border-radius:16px;display:block}
+.dock{margin-top:auto;background:rgb(255 255 255 / .14);border-radius:28px;padding:12px;display:grid;grid-template-columns:repeat(4,1fr);justify-items:center}
+.dock i,.dock button{width:58px;height:58px;border-radius:16px;display:block;border:0;padding:0}
+.dock button{background:#1a6b50;cursor:pointer;display:grid;place-items:center}
+.demo{border:1px dashed rgb(255 255 255 / .35);border-radius:12px;padding:10px 12px;font-size:12px;color:#d6e2dc;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.demo button{border:1px solid rgb(255 255 255 / .4);background:transparent;color:#fff;border-radius:9px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+/* week */
+.week{background:var(--surface);border-radius:16px;overflow:hidden}
+.whead,.wbody{display:grid;grid-template-columns:26px repeat(5,minmax(0,1fr))}
+.whead div{font-size:12px;text-align:center;padding:6px 0;color:var(--muted)}
+.whead .today{background:var(--green);color:var(--on-green);font-weight:700}
+.wcol{position:relative;border-left:1px solid var(--line)}
+.wtime{position:relative}
+.wtime span{position:absolute;right:3px;font-size:10px;color:var(--muted);transform:translateY(-6px)}
+.wline{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.wev{position:absolute;left:2px;right:2px;border-radius:6px;padding:3px 4px;font-size:10px;line-height:1.25;overflow:hidden;color:var(--ink)}
+.wev b{font-weight:700;display:block}
+.wgap{position:absolute;left:2px;right:2px;border-radius:6px;border:1.5px dashed var(--green);display:grid;place-items:center;text-align:center;font-size:10px;color:var(--green);background:var(--green-soft);cursor:pointer;padding:0;line-height:1.2}
+.wgap.zero{border-color:var(--line);color:var(--muted);background:transparent}
+/* night */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.steps i{height:4px;border-radius:9px;background:var(--night-2)}
+.steps i.done{background:var(--mint)}
+.ncard{background:var(--night-2);border-radius:14px;padding:12px 14px;min-width:0}
+.ngap{border:1.5px dashed var(--mint);border-radius:14px;padding:12px 14px;display:grid;gap:8px;min-width:0}
+.ngap.empty{border-color:var(--night-muted)}
+.ntask{background:var(--night-ink);color:var(--night);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.night .time{color:var(--night-muted)}
+/* alerts */
+.alert{background:var(--surface);border-radius:14px;padding:12px 14px;border:1.5px solid transparent}
+.alert.hl{border-color:var(--green)}
+.alert.dark{background:var(--night);color:var(--night-ink)}
+.alert .k{font-size:12px;font-weight:700}
+.check{display:flex;justify-content:space-between;align-items:center;background:var(--surface);padding:13px 14px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
+.check:first-child{border-radius:14px 14px 0 0}.check:last-child{border-radius:0 0 14px 14px;border-bottom:0}
+.check input{width:20px;height:20px;accent-color:var(--green)}
+/* recap & story */
+.ring{position:relative;width:110px;height:110px;flex:none}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:28px;line-height:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--night-2);border-radius:14px;padding:12px 8px;text-align:center}
+.stats b{display:block;font-size:22px}
+.stats span{font-size:12px;color:var(--night-muted)}
+.mini{height:8px;border-radius:4px;background:var(--night-2);overflow:hidden;display:flex}
+.mini span{background:var(--mint)}
+.story{background:#1a6b50;color:#fff;border-radius:22px;aspect-ratio:9/16;max-width:100%;padding:26px 22px;display:flex;flex-direction:column}
+.story .pct{font-size:110px;font-weight:700;line-height:.9;letter-spacing:-.04em}
+.story .pct small{font-size:52px}
+.sbar{display:flex;height:30px;gap:3px;margin-top:6px}
+.sbar span{border-radius:6px}
+.sstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:20px}
+.sstats div{background:rgb(15 63 48 / .6);border-radius:12px;padding:10px 6px;text-align:center;font-size:12px;color:#bdebd8}
+.sstats b{display:block;font-size:20px;color:#fff}
+@media (prefers-reduced-motion:no-preference){.btn,.gap,.status,.optbtn{transition:transform .12s}.btn:active,.gap:active,.status:active,.optbtn:active{transform:scale(.97)}}
+@media (max-width:440px){body{padding-inline:8px}.shell{height:calc(100dvh - 120px);min-height:620px;border-radius:24px}}
+</style>
+
+<div class="top">
+  <div class="brand"><div><b>틈 T:EUM</b> <small>· 시연용 프로토타입, 가상의 대학생 하루</small></div><button class="reset" data-act="reset">처음으로</button></div>
+  <nav class="picker" id="picker" aria-label="화면 바로 가기"></nav>
+</div>
+<div class="shell">
+  <main id="app" class="screen"></main>
+  <nav class="tabs" id="tabs" aria-label="메뉴"></nav>
+  <div id="toast" class="toast" role="status" hidden></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hm = m => String(Math.floor((m % 1440 + 1440) % 1440 / 60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+const dur = m => m <= 0 ? '0분' : (m >= 60 ? Math.floor(m/60) + '시간' + (m%60 ? ' ' + (m%60) + '분' : '') : m + '분');
+const dueTxt = d => d === 0 ? '오늘 23:59' : 'D-' + d;
+
+const TRAVEL = {'제1공학관 204|학교 앞 스터디카페':25,'학교 앞 스터디카페|인문관 310':20,'인문관 310|알바 장소':40,'알바 장소|학생회관':20};
+/* 예시 학교: 실제 앱에서는 학교 지도 데이터로 건물 위치를 가져와요. 좌표 단위는 m */
+const SCHOOLS = {
+  hanbit: {name:'한빛대학교', campus:'본캠퍼스', note:'평지 · 건물이 가까이 모여 있어요', slope:1,
+    b:{'제1공학관':[0,0], '인문관':[420,120], '본관':[200,300], '경상관':[520,380], '학생회관':[260,80], '중앙도서관':[150,180]}},
+  saesol: {name:'새솔대학교', campus:'언덕 캠퍼스', note:'오르막이 많아 걷는 시간이 1.3배예요', slope:1.3,
+    b:{'제1공학관':[0,0], '인문관':[800,300], '본관':[450,600], '경상관':[950,700], '학생회관':[400,150], '중앙도서관':[300,400]}}
+};
+const bldOf = loc => { const sc = S.school && SCHOOLS[S.school]; return sc ? Object.keys(sc.b).find(k => String(loc).startsWith(k)) : null; };
+function walk(a, b) {
+  const sc = SCHOOLS[S.school], p = sc.b[a], q = sc.b[b];
+  const meters = Math.round(Math.hypot(p[0] - q[0], p[1] - q[1]) * 1.25 / 10) * 10; /* 길이 꺾이는 만큼 1.25배 */
+  return {min: Math.ceil(meters / 80 * sc.slope) + 2, meters}; /* 걸음 분당 80m + 건물 안 이동 2분 */
+}
+function travelInfo(a, b) {
+  if (a.loc === b.loc) return {min:0, mode:'same'};
+  const ba = bldOf(a.loc), bb = bldOf(b.loc);
+  if (ba && bb) return ba === bb ? {min:2, mode:'walk', meters:0} : {...walk(ba, bb), mode:'walk'};
+  const t = TRAVEL[a.loc+'|'+b.loc] ?? TRAVEL[b.loc+'|'+a.loc];
+  return t != null ? {min:t, mode:'set'} : {min:15, mode:'guess'};
+}
+const travelTime = (a, b) => travelInfo(a, b).min;
+const mealTime = (end, raw) => ((end >= 660 && end <= 870) || (end >= 1020 && end <= 1170)) && raw >= 40 ? 30 : 0;
+
+function fresh() {
+  return {
+    view:'home', sub:'list', gapFrom:'e1', filter:'all', editing:null, addOpen:false,
+    wmode:'live', pick:null,
+    events:[
+      {id:'e1', name:'경영학원론', kind:'수업', start:540, end:630, base:630, loc:'제1공학관 204', prep:0},
+      {id:'e2', name:'팀플 회의', kind:'팀 모임', start:720, end:780, base:780, loc:'학교 앞 스터디카페', prep:15},
+      {id:'e3', name:'세계문화 수업', kind:'수업', start:840, end:930, base:930, loc:'인문관 310', prep:10},
+      {id:'e4', name:'아르바이트', kind:'고정 일정', start:1050, end:1290, base:1290, loc:'알바 장소', prep:0}
+    ],
+    tomorrow:[
+      {id:'t1', name:'아르바이트', kind:'고정 일정', start:600, end:840, base:840, loc:'알바 장소', prep:0},
+      {id:'t2', name:'동아리 정기 모임', kind:'고정 일정', start:1020, end:1110, base:1110, loc:'학생회관', prep:0}
+    ],
+    tasks:[
+      {id:'k1', name:'과학철학 댓글 과제', due:0, status:'todo', moved:false},
+      {id:'k2', name:'ARCT 저널 초안', due:4, status:'todo', moved:false},
+      {id:'k3', name:'팀플 자료 조사', due:6, status:'todo', moved:false},
+      {id:'k4', name:'중간 발표 자료', due:8, status:'todo', moved:false},
+      {id:'k5', name:'기말 리포트 개요', due:12, status:'todo', moved:false}
+    ],
+    tview:'today',
+    upcoming:[{name:'중간 발표 자료', due:8}, {name:'기말 리포트 개요', due:12}],
+    used:{}, finished:0, notif:{gap:true, depart:true, due:true, plan:true},
+    timetable:null, justImported:false, tt:{stage:'idle', img:null, rows:[]},
+    setPage:'main', sleep:{bed:1470, wake:450, prep:40},
+    custom:[], addEv:false, school:null, schoolPick:null, schQ:'', calc:{a:'제1공학관', b:'경상관'}
+  };
+}
+/* 시연용 인식 결과: 실제 앱에서는 올린 캡처 이미지를 읽어서 만들어요 */
+const SAMPLE_TT = [
+  {d:0, s:540, e:630, n:'경영학원론', l:'공학관 204'}, {d:0, s:840, e:930, n:'세계문화', l:'인문관 310'},
+  {d:1, s:630, e:720, n:'과학기술 철학', l:'본관 105'}, {d:1, s:780, e:870, n:'통계학', l:'경상관 402'},
+  {d:2, s:540, e:630, n:'경영학원론', l:'공학관 204'}, {d:2, s:840, e:930, n:'세계문화', l:'인문관 310'},
+  {d:3, s:630, e:720, n:'과학기술 철학', l:'본관 105'}, {d:3, s:780, e:870, n:'통계학', l:'', flag:true},
+  {d:4, s:540, e:630, n:'경영학원론', l:'공학관 204'}, {d:4, s:840, e:930, n:'세계문화', l:'인문관 310'}
+];
+const DAYS = ['월','화','수','목','금'];
+const KINDS = ['수업','알바','동아리','팀플','기타'];
+const KIND_COLOR = {'수업':'--c2','알바':'--c6','동아리':'--c5','팀플':'--c7','기타':'--c3'};
+const toMin = s => { const [h, m] = String(s).split(':').map(Number); return h * 60 + (m || 0); };
+const dayItems = d => d === 4 ? S.events.map(e => ({n:e.name, s:e.start, e:e.end}))
+  : [...(S.timetable || []).filter(r => r.d === d), ...S.custom.filter(r => r.d === d)].map(r => ({n:r.n, s:r.s, e:r.e}));
+function evForm(fixedDay) {
+  const dayOpts = DAYS.map((d, i) => `<option value="${i}" ${i === 4 ? 'selected' : ''}>${d}요일${i === 4 ? ' (오늘)' : ''}</option>`).join('');
+  return `<form class="sheet" id="evForm">
+    <b>${fixedDay ? '오늘 일정 추가' : '시간표에 일정 추가'}</b>
+    <label for="evName">일정 이름<input id="evName" required placeholder="예: 편의점 알바, 교수님 면담"></label>
+    <div class="grid2"><label for="evKind">종류<select id="evKind">${KINDS.map(k => `<option>${k}</option>`).join('')}</select></label>
+      ${fixedDay ? '<input type="hidden" id="evDay" value="4">' : `<label for="evDay">요일<select id="evDay">${dayOpts}</select></label>`}</div>
+    <div class="grid2"><label for="evStart">시작<input id="evStart" type="time" required value="16:00" step="600"></label><label for="evEnd">끝<input id="evEnd" type="time" required value="17:00" step="600"></label></div>
+    <label for="evLoc">장소<input id="evLoc" list="bldList" placeholder="예: 학생회관 2층"></label>
+    <datalist id="bldList">${S.school ? Object.keys(SCHOOLS[S.school].b).map(n => `<option value="${n}">`).join('') : ''}</datalist>
+    <div class="sub">${S.school ? '건물 이름으로 시작하면 캠퍼스 안 이동을 도보로 계산해요.' : '설정에서 학교를 정하면 캠퍼스 안 이동을 도보로 계산해요.'}</div>
+    <div class="sub">오늘(금요일)에 넣으면 앞뒤 틈이 바로 다시 계산돼요.</div>
+    <div class="row"><button type="button" class="btn ghost small" data-act="addEv">닫기</button><button class="btn small">추가</button></div>
+  </form>`;
+}
+const plusBtn = label => `<button class="iconbtn" data-act="addEv" aria-label="${label}" aria-expanded="${S.addEv}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>`;
+const TT_COLOR = {'경영학원론':'--c1','세계문화':'--c4','과학기술 철학':'--c2','통계학':'--c3'};
+let S = fresh(), uid = 100;
+
+function gapsOf(list, useBase) {
+  const ev = [...list].map(e => useBase ? {...e, end:e.base} : e).sort((a, b) => a.start - b.start);
+  const out = [];
+  for (let i = 0; i < ev.length - 1; i++) {
+    const a = ev[i], b = ev[i+1], raw = b.start - a.end;
+    if (raw <= 0) { out.push({from:a, to:b, start:a.end, end:b.start, raw:0, travel:0, prep:0, meal:0, usable:0}); continue; }
+    const ti = travelInfo(a, b), travel = Math.min(ti.min, raw);
+    const prep = Math.min(b.prep || 0, raw - travel);
+    const meal = Math.min(mealTime(a.end, raw), raw - travel - prep);
+    out.push({from:a, to:b, start:a.end, end:b.start, raw, travel, prep, meal, usable:Math.max(0, raw - travel - prep - meal), mode:ti.mode, meters:ti.meters});
+  }
+  return out;
+}
+const byDue = list => [...list].sort((a, b) => a.due - b.due || a.id.localeCompare(b.id));
+function model() {
+  const gaps = gapsOf(S.events), baseGaps = gapsOf(S.events, true);
+  gaps.forEach(g => { const b = baseGaps.find(x => x.from.id === g.from.id); g.diff = b ? g.usable - b.usable : 0; });
+  const active = byDue(S.tasks.filter(t => !t.moved && t.status !== 'done'));
+  const done = S.tasks.filter(t => !t.moved && t.status === 'done');
+  const live = gaps.filter(g => g.usable > 0);
+  const place = {};
+  active.forEach((t, i) => { if (live[i]) place[t.id] = live[i].from.id; });
+  const usable = gaps.reduce((s, g) => s + g.usable, 0), raw = gaps.reduce((s, g) => s + g.raw, 0);
+  const baseUsable = baseGaps.reduce((s, g) => s + g.usable, 0);
+  const tgaps = gapsOf(S.tomorrow);
+  return {gaps, active, done, place, usable, raw, diff: usable - baseUsable, tgaps};
+}
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2400); }
+const ev = id => S.events.find(e => e.id === id);
+const deltaTag = d => d === 0 ? '' : `<span class="delta ${d < 0 ? 'minus' : ''}">${d > 0 ? '+' : '−'}${dur(Math.abs(d))}</span>`;
+
+function segBar(g) {
+  const p = v => (g.raw ? v / g.raw * 100 : 0) + '%';
+  return `<div class="bar" aria-hidden="true"><span style="width:${p(g.travel)};background:var(--travel)"></span><span style="width:${p(g.prep)};background:var(--prep)"></span><span style="width:${p(g.meal)};background:var(--meal)"></span><span style="width:${p(g.usable)};background:var(--green)"></span></div>`;
+}
+function cutText(g) {
+  const p = [];
+  if (g.travel) p.push('이동 ' + g.travel + '분');
+  if (g.meal) p.push('식사 ' + g.meal + '분');
+  if (g.prep) p.push('준비 ' + g.prep + '분');
+  return p.join(' · ') || '뺄 시간 없음';
+}
+
+/* ---------- home & widget ---------- */
+function vHome(m) {
+  const e = ev('e1'), g = m.gaps.find(x => x.from.id === 'e1'), first = m.active[0];
+  const logo = c => `<svg width="18" height="18" viewBox="0 0 120 120" fill="none" aria-hidden="true"><rect x="10" y="12" width="100" height="26" rx="8" fill="${c}"/><rect x="12" y="47" width="96" height="26" rx="8" fill="none" stroke="#5fbf98" stroke-width="6" stroke-dasharray="10 7"/><rect x="10" y="82" width="100" height="26" rx="8" fill="${c}"/></svg>`;
+  let w = '';
+  if (S.wmode === 'live') {
+    w = `<div class="widget"><div class="row"><b style="display:flex;gap:6px;align-items:center;font-size:13px">${logo('currentColor')}틈</b><span class="sub num">10:00</span></div>
+      <div><div class="sub" style="font-weight:600">지금 수업 중</div><div style="font-size:22px;font-weight:700">${esc(e.name)}</div>
+      <div style="font-size:14px">${hm(e.end)} 끝날 예정 · 다음 틈 <b class="okc">${dur(g.usable)}</b></div></div>
+      <div class="sub">수업이 예정과 다르게 끝나면 눌러 주세요</div>
+      <div class="wbtns"><button class="btn" data-act="wmode" data-v="early">일찍 끝남</button><button class="btn ghost" data-act="wmode" data-v="late">지연</button></div></div>`;
+  } else if (S.wmode === 'early' || S.wmode === 'late') {
+    const early = S.wmode === 'early';
+    const opts = early ? [[600,'지금 10:00'],[610,'10:10'],[620,'10:20']] : [[630,'끝났어요'],[645,'15분 지연'],[660,'30분 지연']];
+    const pick = S.pick ?? opts[early ? 0 : 1][0];
+    const after = gapsOf(S.events.map(x => x.id === 'e1' ? {...x, end: pick} : x)).find(x => x.from.id === 'e1');
+    const minus = after.usable < g.usable;
+    w = `<div class="widget ${early ? '' : 'ask'}"><div class="row"><b style="display:flex;gap:6px;align-items:center;font-size:13px">${logo('currentColor')}틈</b><span class="sub num">${early ? '10:00' : '10:30'}</span></div>
+      <div><div class="sub" style="font-weight:600">${early ? esc(e.name) + '이 일찍 끝났군요' : esc(e.name) + '이 10:30에 끝날 예정이었어요'}</div>
+      <div style="font-size:20px;font-weight:700">${early ? '언제 끝났나요?' : '혹시 아직 안 끝나셨나요?'}</div></div>
+      <div class="wbtns">${opts.map(([v, l]) => `<button class="optbtn ${pick===v?'on':''} ${!early && v>630 && pick!==v ? 'amber':''}" data-act="pick" data-v="${v}" aria-pressed="${pick===v}">${l}</button>`).join('')}</div>
+      <div class="preview ${minus ? 'minus' : ''}"><div class="sub">다음 틈이 이렇게 바뀌어요</div>
+        <div class="row" style="justify-content:flex-start"><span class="num" style="font-size:19px;color:var(--muted);text-decoration:line-through">${dur(g.usable)}</span><span aria-hidden="true">→</span><b class="num" style="font-size:25px;color:${minus?'var(--amber)':'var(--green)'}">${dur(after.usable)}</b></div>
+        <div class="sub">${cutText(after)}은 그대로 빼고 계산해요</div></div>
+      <div class="wbtns"><button class="btn ghost" style="flex:0 0 88px" data-act="wmode" data-v="live">취소</button><button class="btn" data-act="applyPick">이대로 적용</button></div>
+      ${early ? '' : '<div class="sub">10분 동안 답이 없으면 제때 끝난 걸로 계산해요</div>'}</div>`;
+  } else {
+    const minus = g.diff < 0;
+    w = `<div class="widget dark ${minus ? 'minus' : ''}"><div class="row"><b style="display:flex;gap:6px;align-items:center;font-size:13px">${logo('#eef3f1')}틈</b>${g.diff ? `<span class="tag" style="background:${minus?'var(--amber-line)':'var(--mint)'};color:${minus?'#2a1a00':'var(--mint-ink)'}">${g.diff>0?'+':'−'}${dur(Math.abs(g.diff))} ${minus?'줄었어요':'늘었어요'}</span>` : '<span class="tag" style="background:var(--night-2);color:var(--night-ink)">예정대로</span>'}</div>
+      <div><div style="font-size:13px;color:var(--night-muted)">${hm(g.start)}부터 쓸 수 있는 틈</div>
+      <div class="row" style="justify-content:flex-start;align-items:baseline"><span class="wbig num">${dur(g.usable)}</span>${g.diff ? `<span class="num" style="color:var(--night-muted);text-decoration:line-through">${dur(g.usable - g.diff)}</span>` : ''}</div>
+      <div style="font-size:13px;color:var(--night-muted)">${hm(g.start)} – ${hm(g.end)} · ${cutText(g)} 제외</div></div>
+      ${segBar(g)}
+      ${first ? `<div class="wrec"><div><div style="font-size:12px;color:var(--night-muted)">마감 가까운 순 추천 · 하다가 멈춰도 괜찮아요</div><b>${esc(first.name)}</b><div style="font-size:12px;color:#e8a87c;font-weight:600">마감 ${dueTxt(first.due)}</div></div><button class="btn small" style="background:var(--mint);color:var(--mint-ink)" data-act="startFrom" data-from="e1">시작하기</button></div>` : '<div class="wrec">남은 할 일이 없어요. 쉬어 가세요.</div>'}
+      <div class="wbtns"><button class="btn small ghost" style="background:transparent;color:var(--night-ink);border-color:var(--night-muted)" data-act="undoE1">되돌리기</button><button class="btn small" style="background:var(--night-ink);color:var(--night)" data-act="go" data-v="today">오늘 일정 보기</button></div></div>`;
+  }
+  const apps = [['날씨','#5b8def'],['사진','#e8a33d'],['메모','#e9cf5a'],['지도','#4fb48a'],['메일','#7180f0'],['음악','#e35d6a'],['계산기','#8a8f98'],['설정','#9aa3a0']];
+  return `${w}
+    ${S.wmode === 'live' ? `<div class="demo"><span>시연: 10:30이 되면 위젯이 이렇게 물어요</span><button data-act="wmode" data-v="late">10:30 화면 보기</button></div>` : ''}
+    <div class="apps" aria-hidden="true">${apps.map(([n, c]) => `<div class="app"><i style="background:${c}"></i>${n}</div>`).join('')}</div>
+    <div class="dock"><i style="background:#4fb48a"></i><i style="background:#5b8def"></i><i style="background:#e8a33d"></i><button data-act="go" data-v="today" aria-label="틈 앱 열기"><svg width="34" height="34" viewBox="0 0 120 120" fill="none"><rect x="10" y="12" width="100" height="26" rx="8" fill="#fff"/><rect x="12" y="47" width="96" height="26" rx="8" fill="none" stroke="#bdebd8" stroke-width="6" stroke-dasharray="10 7"/><rect x="10" y="82" width="100" height="26" rx="8" fill="#fff"/></svg></button></div>`;
+}
+
+/* ---------- today ---------- */
+function vToday(m) {
+  const seg = `<div class="seg"><button data-act="sub" data-v="week" class="${S.sub==='week'?'on':''}">주간 시간표</button><button data-act="sub" data-v="list" class="${S.sub==='list'?'on':''}">오늘</button></div>`;
+  if (S.sub === 'week') return vWeek(m, seg);
+  const changed = S.events.filter(e => e.end !== e.base);
+  const sl = S.sleep, quiet = 'background:transparent;border:1.5px dashed var(--line)';
+  let rows = `<div class="time num">${hm(sl.wake)}</div><button class="card" data-act="setPage" data-v="sleep" style="${quiet};text-align:left;cursor:pointer;font-size:inherit"><div class="row"><b>기상</b><span class="sub">수면 ${dur(sleepHours())}</span></div><div class="sub num">준비 ${sl.prep}분 · ${hm(sl.wake + sl.prep)}부터 나갈 수 있어요</div></button>`;
+  [...S.events].sort((a, b) => a.start - b.start).forEach(e => {
+    const d = e.end - e.base;
+    rows += `<div class="time num">${hm(e.start)}</div>
+      <div class="card"><div class="row"><h3>${esc(e.name)}${e.custom ? ' <span class="tag gray">직접 추가</span>' : ''}</h3>${e.custom && !d ? `<button class="link" data-act="delEv" data-id="${e.id}">삭제</button>` : ''}${d < 0 ? '<span class="tag ok">일찍 끝남</span>' : d > 0 ? '<span class="tag late">지연</span>' : `<button class="link" data-act="edit" data-id="${e.id}">끝난 시간 바꾸기</button>`}</div>
+      <div class="sub">${esc(e.kind)} · ${esc(e.loc)} · ${d ? `<s>~${hm(e.base)}</s> <b style="color:var(--ink)">~${hm(e.end)}</b>` : '~' + hm(e.end)}</div>
+      ${S.editing === e.id || d ? `<div class="shiftrow" role="group" aria-label="끝난 시간">${[-30,-15,0,15,30].map(x => `<button class="${d===x?'on':''}" data-act="shift" data-id="${e.id}" data-d="${x}">${x===0?'예정대로':x<0?(-x)+'분 일찍':x+'분 지연'}</button>`).join('')}</div>` : ''}</div>`;
+    const g = m.gaps.find(x => x.from.id === e.id);
+    if (g) {
+      const rec = m.active.find(t => m.place[t.id] === g.from.id);
+      rows += `<div class="time num" style="${g.usable>0?'color:var(--green);font-weight:700':''}">${hm(g.start)}</div>
+        <button class="gap ${g.usable>0?'live':'zero'} ${g.diff?'changed':''}" data-act="gap" data-from="${g.from.id}">
+          <div class="row"><span class="ttl">틈 · 실제 ${dur(g.usable)}${deltaTag(g.diff)}</span><span class="sub">빈 시간 ${dur(g.raw)}</span></div>
+          ${g.usable > 0 ? segBar(g) : ''}
+          <div class="sub">${cutText(g)}${g.usable > 0 ? (rec ? ' · <b class="okc">추천: ' + esc(rec.name) + '</b>' : '') : '이면 끝'}</div>
+        </button>`;
+    }
+  });
+  rows += `<div class="time num">${hm(sl.bed)}</div><button class="card" data-act="setPage" data-v="sleep" style="${quiet};text-align:left;cursor:pointer;font-size:inherit"><div class="row"><b>취침</b><span class="sub num">${hm(sl.bed - 60)} 내일 계획 알림</span></div><div class="sub">이후로는 할 일을 추천하지 않아요</div></button>`;
+  return `<div class="row"><div><div class="eyebrow">10월 9일 금요일</div><h1>오늘</h1></div><div class="row" style="gap:8px">${plusBtn('오늘 일정 추가')}${gearBtn()}</div></div>${seg}${S.addEv ? evForm(true) : ''}
+    ${changed.length ? `<div class="banner"><span>${changed.map(e => esc(e.name) + (e.end < e.base ? '이 ' + (e.base - e.end) + '분 일찍' : '이 ' + (e.end - e.base) + '분 늦게')).join(', ')} 끝나서 틈을 다시 계산했어요</span><button data-act="undoAll">되돌리기</button></div>` : ''}
+    <div class="sum"><div><div style="font-size:13px;color:var(--night-muted)">오늘 실제로 쓸 수 있는 시간</div><div class="big num">${dur(m.usable)}${deltaTag(m.diff)}</div></div>
+      <small>빈 시간 ${dur(m.raw)} 중<br>이동·식사·준비 ${dur(m.raw - m.usable)} 제외</small></div>
+    <div class="tl">${rows}</div>`;
+}
+function vWeek(m, seg) {
+  const H = 36, S0 = 540, S1 = 1320, y = v => (v - S0) / 60 * H, height = y(S1);
+  let times = '', lines = '';
+  for (let h = 9; h <= 22; h++) { times += `<span style="top:${y(h*60)}px">${h > 12 ? h - 12 : h}</span>`; lines += `<div class="wline" style="top:${y(h*60)}px"></div>`; }
+  const box = (n, l, s, e, c) => `<div class="wev" style="top:${y(s)}px;height:${y(e)-y(s)-2}px;background:var(${c})"><b>${esc(n)}</b>${esc(l)}</div>`;
+  const WEEK = [0,1,2,3].map(d => [
+    ...(S.timetable || []).filter(r => r.d === d).map(r => [r.n, r.l, r.s, r.e, TT_COLOR[r.n] || '--c5']),
+    ...S.custom.filter(r => r.d === d).map(r => [r.n, r.l, r.s, r.e, KIND_COLOR[r.k] || '--c5'])
+  ]);
+  const mine = [...S.custom.map(r => ({...r, src:'c'})), ...S.events.filter(e => e.custom).map(e => ({id:e.id, n:e.name, k:e.kind, d:4, s:e.start, e:e.end, l:e.loc, src:'e'}))]
+    .sort((a, b) => a.d - b.d || a.s - b.s);
+  const col = {e1:'--c1', e2:'--c7', e3:'--c4', e4:'--c6'};
+  Object.assign(col, Object.fromEntries(S.events.filter(e => e.custom).map(e => [e.id, KIND_COLOR[e.kind] || '--c5'])));
+  const cols = WEEK.map(d => `<div class="wcol" style="height:${height}px">${lines}${d.map(a => box(...a)).join('')}</div>`).join('');
+  const fri = S.events.map(e => box(e.name, e.loc.replace('학교 앞 ',''), e.start, e.end, col[e.id] || '--c5')).join('') +
+    m.gaps.filter(g => g.raw > 0).map(g => `<button class="wgap ${g.usable>0?'':'zero'}" data-act="gap" data-from="${g.from.id}" style="top:${y(g.start)+1}px;height:${Math.max(18, y(g.end)-y(g.start)-3)}px"><span>틈<br><b>${dur(g.usable)}</b></span></button>`).join('');
+  const prompt = !S.timetable ? `<div class="card row" style="border:1.5px dashed var(--green)"><div style="min-width:0"><b>월~목이 비어 있어요</b><div class="sub">에타 시간표 캡처를 넣으면 수업이 자동으로 채워져요.</div></div><button class="btn small" data-act="setPage" data-v="tt">불러오기</button></div>`
+    : S.justImported ? `<div class="banner"><span>에타 시간표에서 수업 ${S.timetable.length}개를 불러왔어요</span><button data-act="setPage" data-v="tt">수정</button></div>` : '';
+  const mineList = mine.length ? `<h2>직접 추가한 일정</h2><div style="display:grid;gap:8px">${mine.map(r => `<div class="card row"><div style="min-width:0"><b>${esc(r.n)}</b> <span class="tag gray">${esc(r.k)}</span><div class="sub num">${DAYS[r.d]}요일 ${hm(r.s)} – ${hm(r.e)}${r.l ? ' · ' + esc(r.l) : ''}</div></div><button class="link" data-act="delEv" data-id="${r.id}">삭제</button></div>`).join('')}</div>` : '';
+  return `<div class="row"><div><div class="eyebrow">2026년 2학기</div><h1>이번 주 시간표</h1></div><div class="row" style="gap:8px">${plusBtn('시간표에 일정 추가')}${gearBtn()}</div></div>${seg}${S.addEv ? evForm(false) : ''}${prompt}
+    <div class="week"><div class="whead"><div></div><div>월</div><div>화</div><div>수</div><div>목</div><div class="today">금 · 오늘</div></div>
+    <div class="wbody"><div class="wtime" style="height:${height}px">${times}</div>${cols}<div class="wcol" style="height:${height}px">${lines}${fri}</div></div></div>
+    <div class="banner"><span>오늘 틈 ${m.gaps.filter(g => g.usable > 0).length}개 · 실제 ${dur(m.usable)}${m.diff ? ' (' + (m.diff>0?'+':'−') + dur(Math.abs(m.diff)) + ')' : ''}</span><span style="color:var(--night-muted)">점선 = 틈</span></div>
+    ${mineList}`;
+}
+
+/* ---------- settings: timetable import ---------- */
+const gearBtn = () => `<button class="iconbtn" data-act="go" data-v="settings" aria-label="설정"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>`;
+function ttThumb() {
+  if (S.tt.img) return `<img src="${S.tt.img}" alt="올린 시간표 캡처" style="width:100%;max-height:170px;object-fit:cover;border-radius:12px;border:1px solid var(--line)">`;
+  const cells = SAMPLE_TT.map(r => `<span style="position:absolute;left:${r.d*20}%;width:19%;top:${(r.s-540)/450*100}%;height:${(r.e-r.s)/450*100}%;background:var(${TT_COLOR[r.n]});border-radius:4px"></span>`).join('');
+  return `<div style="position:relative;height:150px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden" aria-label="예시 시간표 캡처" role="img">${cells}</div>`;
+}
+const sleepHours = () => (S.sleep.wake + 1440 - S.sleep.bed) % 1440;
+function setHead(title, back) {
+  return `<div class="row" style="justify-content:flex-start"><button class="link" data-act="${back ? 'setPage' : 'go'}" data-v="${back ? 'main' : 'today'}" style="font-size:22px;text-decoration:none;color:var(--ink);padding:0 6px 0 0" aria-label="뒤로">‹</button><h1 style="font-size:23px">${title}</h1></div>`;
+}
+function vSettings() {
+  if (S.setPage === 'tt') return vSetTT();
+  if (S.setPage === 'sleep') return vSetSleep();
+  if (S.setPage === 'school') return vSetSchool();
+  const sl = S.sleep, h = sleepHours(), sc = S.school && SCHOOLS[S.school], pk = SCHOOL_INDEX.find(s => s.id === S.schoolPick);
+  return `${setHead('설정', false)}
+    <div class="setlist">
+      <button class="setrow" data-act="setPage" data-v="school"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 10l9-5 9 5-9 5-9-5Z"/><path d="M7 12v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V12"/></svg></span><span class="tx"><b>학교</b><span class="sub">${pk ? esc(schFull(pk)) + (sc ? ' · 캠퍼스 안은 도보로 계산' : ' · 건물 지도 준비 중') : '설정 안 함 · 학교를 검색해서 정해요'}</span></span><span class="chev" aria-hidden="true">›</span></button>
+      <button class="setrow" data-act="setPage" data-v="tt"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span><span class="tx"><b>시간표</b><span class="sub">${S.timetable ? '에타에서 수업 ' + S.timetable.length + '개 불러옴' : '에타 캡처로 불러오기'}</span></span><span class="chev" aria-hidden="true">›</span></button>
+      <button class="setrow" data-act="setPage" data-v="sleep"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg></span><span class="tx"><b>수면 패턴</b><span class="sub num">${hm(sl.bed)} 취침 · ${hm(sl.wake)} 기상 · ${dur(h)}</span></span><span class="chev" aria-hidden="true">›</span></button>
+      <button class="setrow" data-act="go" data-v="alerts"><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg></span><span class="tx"><b>알림</b><span class="sub">틈 시작 전 · 출발 · 마감 · 내일 계획</span></span><span class="chev" aria-hidden="true">›</span></button>
+    </div>
+    <h2>계산 기준</h2>
+    <div class="card" style="display:grid;gap:6px"><div class="row"><span>이동 시간</span><span class="sub">${sc ? '캠퍼스 안 도보 · 밖은 대중교통' : '학교를 정하면 도보로 계산'}</span></div><div class="row"><span>식사 시간</span><span class="sub">점심·저녁 사이 틈에서 30분</span></div><div class="row"><span>우선순위</span><span class="sub">마감 가까운 순</span></div><div class="row"><span>추천하지 않는 시간</span><span class="sub num">${hm(sl.bed - 60)} 이후</span></div></div>`;
+}
+/* 검색용 학교 목록: 시연용 가상 학교. 건물 지도가 있는 곳은 data로 연결 */
+const SCHOOL_INDEX = [
+  {id:'hb1', name:'한빛대학교', campus:'본캠퍼스', area:'서울', data:'hanbit'},
+  {id:'hb2', name:'한빛대학교', campus:'제2캠퍼스', area:'경기', data:null},
+  {id:'ss1', name:'새솔대학교', campus:'언덕 캠퍼스', area:'부산', data:'saesol'},
+  {id:'ss2', name:'새솔대학교', campus:'도심 캠퍼스', area:'부산', data:null},
+  {id:'do1', name:'다온대학교', campus:'', area:'대전', data:null},
+  {id:'gr1', name:'가람대학교', campus:'', area:'광주', data:null},
+  {id:'nr1', name:'누리대학교', campus:'인문캠퍼스', area:'대구', data:null},
+  {id:'hs1', name:'해솔대학교', campus:'', area:'강원', data:null}
+];
+const schFull = s => s.name + (s.campus ? ' ' + s.campus : '');
+function schResults() {
+  const q = S.schQ.trim().replace(/\s+/g, '');
+  const list = SCHOOL_INDEX.filter(s => !q || (s.name + s.campus + s.area).replace(/\s+/g, '').includes(q));
+  if (!list.length) return `<div class="card sub">"${esc(S.schQ)}"와 맞는 학교가 없어요. 학교 이름을 줄여서 검색해 보세요.</div>`;
+  return `<div class="setlist">${list.map(s => `<button class="setrow" data-act="pickSchool" data-id="${s.id}"><span class="tx"><b>${esc(schFull(s))}</b><span class="sub">${esc(s.area)} · ${s.data ? '건물 지도 있음 · 도보로 계산' : '건물 지도 준비 중'}</span></span>${S.schoolPick === s.id ? '<span class="tag ok">선택됨</span>' : '<span class="chev" aria-hidden="true">›</span>'}</button>`).join('')}</div>`;
+}
+function vSetSchool() {
+  const sc = S.school && SCHOOLS[S.school], picked = SCHOOL_INDEX.find(s => s.id === S.schoolPick);
+  const search = `<label for="schSearch" class="sub" style="display:grid;gap:6px">학교 검색
+      <input id="schSearch" type="search" value="${esc(S.schQ)}" placeholder="학교 이름이나 지역으로 검색" autocomplete="off" style="font:inherit;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%"></label>
+    <div id="schResults">${schResults()}</div>`;
+  const current = picked ? `<div class="card row"><div style="min-width:0"><div class="sub">지금 학교</div><b>${esc(schFull(picked))}</b><div class="sub">${picked.data ? '캠퍼스 안 이동을 도보로 계산해요' : '건물 지도가 아직 없어 이동을 15분으로 어림해요'}</div></div><button class="btn small ghost" data-act="pickSchool" data-id="">해제</button></div>` : '';
+  let detail = '';
+  if (sc) {
+    const names = Object.keys(sc.b), c = S.calc;
+    const a = names.includes(c.a) ? c.a : names[0], b = names.includes(c.b) ? c.b : names[1];
+    const w = a === b ? {min:2, meters:0} : walk(a, b);
+    const sel = (id, v) => `<select id="${id}" data-calc="${id === 'calcA' ? 'a' : 'b'}">${names.map(n => `<option ${n===v?'selected':''}>${n}</option>`).join('')}</select>`;
+    const pairs = [['제1공학관','학생회관'],['제1공학관','인문관'],['인문관','경상관'],['본관','중앙도서관']].map(([p, q]) => { const r = walk(p, q); return `<div class="row"><span>${p} → ${q}</span><b class="num">${r.min}분 <span class="sub">· ${r.meters}m</span></b></div>`; }).join('');
+    const today = model().gaps.filter(g => g.raw > 0).map(g => `<div class="row"><span class="num">${hm(g.start)} ${esc(g.from.loc.split(' ')[0])} → ${esc(g.to.loc.split(' ')[0])}</span><span class="tag ${g.mode==='walk'?'ok':'gray'}">${g.mode==='walk'?'도보 ' + g.travel + '분':g.mode==='guess'?'어림 15분':'캠퍼스 밖 ' + g.travel + '분'}</span></div>`).join('');
+    detail = `<h2>${esc(sc.name)} ${esc(sc.campus)}</h2>
+      <div class="sub">${esc(sc.note)}. 걷는 속도는 분당 80m, 길이 꺾이는 만큼 1.25배, 건물 안 이동 2분을 더해 계산해요.</div>
+      <div class="sheet"><b>두 건물 사이 걸어서 얼마나?</b>
+        <div class="grid2"><label for="calcA">출발${sel('calcA', a)}</label><label for="calcB">도착${sel('calcB', b)}</label></div>
+        <div class="row"><span>도보</span><b class="num okc" style="font-size:22px">${w.min}분 <span class="sub">· 약 ${w.meters}m</span></b></div></div>
+      <div class="card" style="display:grid;gap:8px"><b>자주 다니는 길</b>${pairs}</div>
+      <div class="card" style="display:grid;gap:8px"><b>오늘 일정에 이렇게 들어가요</b>${today}<div class="sub">일정 장소에 건물 이름을 넣으면 도보로 계산돼요.</div></div>`;
+  } else if (!picked) {
+    detail = `<div class="card sub">학교를 정하면 캠퍼스 안 건물 사이 이동을 도보 기준으로 계산해요. 지금은 위치를 모르는 이동을 15분으로 어림하고 있어요.</div>`;
+  }
+  return `${setHead('학교', true)}
+    ${current}
+    ${search}
+    <div class="sub">시연용 가상 학교 목록이에요. 건물 지도가 있는 곳은 한빛대학교 본캠퍼스와 새솔대학교 언덕 캠퍼스예요.</div>
+    ${detail}`;
+}
+function vSetSleep() {
+  const sl = S.sleep, h = sleepHours();
+  const bedOpts = [1320,1350,1380,1410,1440,1470,1500,1530,1560].map(v => `<option value="${v}" ${sl.bed===v?'selected':''}>${hm(v)}</option>`).join('');
+  const wakeOpts = [360,390,420,450,480,510,540].map(v => `<option value="${v}" ${sl.wake===v?'selected':''}>${hm(v)}</option>`).join('');
+  const prepOpts = [20,30,40,60].map(v => `<option value="${v}" ${sl.prep===v?'selected':''}>${v}분</option>`).join('');
+  const first = [...S.events].sort((a, b) => a.start - b.start)[0];
+  const leave = sl.wake + sl.prep, spare = first.start - leave;
+  const pos = v => ((v - 1200 + 1440) % 1440) / 720 * 100; /* 20:00 ~ 08:00 축 */
+  const short = h < 360;
+  return `${setHead('수면 패턴', true)}
+    <div class="sub">자는 시간과 일어나는 시간을 정하면, 그 사이에는 할 일을 추천하지 않고 알림도 보내지 않아요.</div>
+    <div class="sheet">
+      <div class="grid2"><label for="slBed">취침<select id="slBed" data-sl="bed">${bedOpts}</select></label><label for="slWake">기상<select id="slWake" data-sl="wake">${wakeOpts}</select></label></div>
+      <label for="slPrep">아침 준비 시간<select id="slPrep" data-sl="prep">${prepOpts}</select></label>
+      <div><div class="sleepviz" aria-hidden="true"><span style="width:${pos(sl.bed)}%"></span><span style="width:${pos(sl.wake) - pos(sl.bed)}%;background:var(--night)"></span><span style="width:${(sl.prep / 720) * 100}%;background:var(--prep)"></span></div>
+        <div class="row sub num" style="margin-top:4px"><span>20:00</span><span>자정</span><span>08:00</span></div></div>
+      <div class="row"><span>수면 시간</span><b class="num ${short ? 'warn' : 'okc'}">${dur(h)}</b></div>
+      ${short ? '<div class="sub warn"><b>6시간보다 짧아요. 늦게까지 할 일을 몰아 넣지 않도록 추천을 줄일게요.</b></div>' : ''}
+    </div>
+    <h2>이렇게 반영돼요</h2>
+    <div class="card" style="display:grid;gap:8px">
+      <div class="row"><span>집에서 나갈 수 있는 시간</span><b class="num">${hm(leave)}</b></div>
+      <div class="row"><span>첫 일정 (${esc(first.name)} ${hm(first.start)})까지</span><b class="num ${spare < 30 ? 'warn' : ''}">${spare > 0 ? dur(spare) + ' 여유' : '빠듯해요'}</b></div>
+      <div class="row"><span>내일 계획 알림</span><b class="num">${hm(sl.bed - 60)}</b></div>
+      <div class="row"><span>할 일 추천 끝</span><b class="num">${hm(sl.bed - 60)}</b></div>
+    </div>`;
+}
+function vSetTT() {
+  const t = S.tt;
+  let body = '';
+  if (t.stage === 'idle') {
+    body = `<div class="sheet">
+      <b>에타 시간표 불러오기</b>
+      <div class="sub">에브리타임 시간표 화면을 캡처해서 올리면, 요일·시간·과목·강의실을 읽어서 주간 시간표를 채워요.</div>
+      <label class="btn block" for="ttFile">캡처 이미지 올리기</label>
+      <input id="ttFile" type="file" accept="image/*" hidden>
+      <button class="btn ghost block" data-act="ttSample">예시 이미지로 해보기</button>
+      <div class="sub">이미지는 시간표를 읽는 데만 쓰고 저장하지 않아요.</div>
+    </div>`;
+  } else if (t.stage === 'reading') {
+    body = `<div class="sheet">${ttThumb()}<b>시간표를 읽고 있어요…</b><div class="sub">요일 칸 → 시간 줄 → 과목과 강의실 순서로 읽어요.</div><div class="bar"><span style="width:65%;background:var(--green)"></span></div></div>`;
+  } else {
+    const rows = t.rows.map((r, i) => `<div class="card" style="display:grid;gap:6px;${r.flag?'border:1.5px solid var(--amber-line)':''}">
+      <div class="row"><b>${esc(r.n)}</b><button class="link" data-act="ttDel" data-i="${i}" aria-label="${esc(r.n)} 빼기">빼기</button></div>
+      <div class="sub num">${DAYS[r.d]}요일 ${hm(r.s)} – ${hm(r.e)}</div>
+      ${r.flag ? `<label class="sub" for="ttPlace${i}" style="display:grid;gap:4px;color:var(--amber);font-weight:600">강의실 글씨가 흐려서 못 읽었어요. 직접 적어 주세요<input id="ttPlace${i}" data-tt="${i}" value="${esc(r.l)}" placeholder="예: 경상관 402" style="font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink)"></label>` : `<div class="sub">${esc(r.l)}</div>`}
+    </div>`).join('');
+    const need = t.rows.filter(r => r.flag && !r.l.trim()).length;
+    body = `${ttThumb()}
+      <div><h2>수업 ${t.rows.length}개를 찾았어요</h2><div class="sub">맞는지 확인하고 넣어 주세요. 알바·동아리처럼 에타에 없는 일정은 직접 추가해요.</div></div>
+      <div style="display:grid;gap:8px">${rows}</div>
+      <div class="row"><button class="btn ghost" data-act="ttAgain">다시 올리기</button><button class="btn" data-act="ttApply" style="flex:1">${need ? '확인 필요 ' + need + '개 남음 · 그래도 넣기' : '시간표에 넣기'}</button></div>`;
+  }
+  return `${setHead('시간표', true)}
+    ${body}
+    <h2>지금 시간표</h2>
+    <div class="card row"><div><b>${S.timetable ? '수업 ' + S.timetable.length + '개' : '아직 없음'}</b><div class="sub">${S.timetable ? '에타 캡처에서 불러옴' : '캡처를 올리면 여기에 표시돼요'}</div></div>${S.timetable ? '<button class="btn small ghost" data-act="ttClear">비우기</button>' : ''}</div>`;
+}
+
+/* ---------- gap ---------- */
+function vGap(m) {
+  const g = m.gaps.find(x => x.from.id === S.gapFrom) || m.gaps[0];
+  const rows = m.active.map((t, i) => `<div class="task ${i===0 && g.usable>0?'first':''} ${t.status==='doing'?'doing':''}"><span class="rank ${i===0?'top':''}">${i+1}</span>
+      <div class="body"><div class="name">${esc(t.name)}</div><div class="sub ${t.due===0?'warn':''}">마감 ${dueTxt(t.due)}</div></div>
+      ${t.status === 'doing' ? '<span class="tag late">진행 중</span>' : i === 0 && g.usable > 0 ? `<button class="btn small" data-act="start" data-id="${t.id}">지금 시작</button>` : `<button class="btn small ghost" data-act="start" data-id="${t.id}">시작</button>`}</div>`).join('');
+  return `<div class="row" style="justify-content:flex-start"><button class="link" data-act="go" data-v="today" style="font-size:22px;text-decoration:none;color:var(--ink);padding:0 6px 0 0" aria-label="오늘 일정으로">‹</button><b class="num">${hm(g.start)} – ${hm(g.end)} 사이의 틈</b></div>
+    <div class="eyebrow">${esc(g.from.name)} 끝 → ${esc(g.to.name)} 시작 전</div>
+    <div><span class="hero num">${dur(g.usable)}</span><span class="strike num">${dur(g.raw)}</span>${deltaTag(g.diff)}</div>
+    <div class="sub">${g.usable > 0 ? '애매해 보여도, 실제로 쓸 수 있는 시간이에요.' : '이 틈은 이동과 식사로 다 채워져요.'}</div>
+    <div class="card">${segBar(g)}<div class="legend">
+      ${g.travel ? `<div class="row"><span style="min-width:0"><i class="dot" style="background:var(--travel)"></i>이동 (${esc(g.from.loc)} → ${esc(g.to.loc)})<br><span class="sub">${g.mode === 'walk' ? '캠퍼스 안 도보' + (g.meters ? ' · 약 ' + g.meters + 'm' : '') : g.mode === 'guess' ? '위치를 몰라 기본 15분으로 계산' : '캠퍼스 밖 · 대중교통 기준'}</span></span><b class="num">${g.travel}분</b></div>` : ''}
+      ${g.meal ? `<div class="row"><span><i class="dot" style="background:var(--meal)"></i>식사</span><b class="num">${g.meal}분</b></div>` : ''}
+      ${g.prep ? `<div class="row"><span><i class="dot" style="background:var(--prep)"></i>준비 시간</span><b class="num">${g.prep}분</b></div>` : ''}
+      <div class="row"><span><i class="dot" style="background:var(--green)"></i>쓸 수 있는 시간</span><b class="num okc">${dur(g.usable)}</b></div></div></div>
+    <div><h2>이 틈에 할 일 · 마감 가까운 순</h2><div class="sub">다 못 끝내도 괜찮아요. 멈춘 일은 '진행 중'으로 남아 다음 틈에 이어서 해요.</div></div>
+    <div style="display:grid;gap:10px">${rows || '<div class="sub">남은 할 일이 없어요.</div>'}</div>
+    ${g.usable > 0 && m.active.length ? `<button class="btn block" data-act="start" data-id="${m.active[0].id}">1순위부터 시작하기</button>` : ''}`;
+}
+
+/* ---------- tasks ---------- */
+const ST = {todo:'시작 전', doing:'진행 중', done:'완료'};
+function taskCard(t, m, extra) {
+  const rank = m.active.indexOf(t) + 1;
+  const gid = m.place[t.id], g = gid && m.gaps.find(x => x.from.id === gid);
+  let where = '';
+  if (t.moved) where = `<div class="sub" style="color:var(--amber);font-weight:600">내일 틈으로 옮김</div>`;
+  else if (t.status === 'done') where = '<div class="sub">끝냄</div>';
+  else if (t.status === 'doing') where = '<div class="sub" style="color:var(--amber);font-weight:600">하는 중 · 멈춰도 다음 틈에 이어서</div>';
+  else if (g) where = `<div class="sub okc"><b>→ ${hm(g.start)} 틈 추천</b></div>`;
+  else where = `<div class="sub warn"><b>오늘 틈에 못 들어감 · 앞 순위가 먼저예요</b></div>`;
+  return `<div class="task ${t.status}"><span class="rank ${rank===1?'top':''}">${t.status==='done'?'✓':t.moved?'→':rank}</span>
+    <div class="body"><div class="name">${esc(t.name)}</div><div class="sub ${t.due<=1&&t.status!=='done'?'warn':''}">마감 ${dueTxt(t.due)}</div>${where}${extra || ''}</div>
+    <button class="status ${t.status}" data-act="cycle" data-id="${t.id}" aria-label="상태: ${ST[t.status]}, 눌러서 바꾸기"><i></i>${ST[t.status]}</button></div>`;
+}
+function vTasks(m) {
+  const today = S.tasks.filter(t => !t.moved && (t.status !== 'todo' || m.place[t.id]));
+  const out = m.active.filter(t => t.status !== 'doing' && !m.place[t.id]);
+  const moved = byDue(S.tasks.filter(t => t.moved));
+  const done = S.tasks.filter(t => !t.moved && t.status === 'done');
+  const liveN = m.gaps.filter(g => g.usable > 0).length;
+  const dueOpts = [[0,'오늘'],[1,'내일 (D-1)'],[2,'D-2'],[3,'D-3'],[5,'D-5'],[7,'D-7'],[10,'D-10'],[14,'D-14']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  const head = `<div class="row"><div><div class="eyebrow">전체 과제 ${S.tasks.length}개 · 마감 가까운 순 · 칩을 누르면 상태가 바뀌어요</div><h1>할 일</h1></div><button class="btn small" data-act="addOpen" aria-expanded="${S.addOpen}">+ 추가</button></div>
+    ${S.addOpen ? `<form class="sheet" id="tkForm"><b>할 일 추가</b><label for="tkName">할 일<input id="tkName" required placeholder="예: 통계학 퀴즈 공부"></label><label for="tkDue">마감<select id="tkDue">${dueOpts}</select></label><div class="row"><button type="button" class="btn ghost small" data-act="addOpen">닫기</button><button class="btn small">추가하고 순서 다시 정하기</button></div></form>` : ''}
+`;
+
+  {
+    const inGap = byDue(m.active.filter(t => t.status === 'doing' || m.place[t.id]));
+    const group = (title, sub, items, extraFn, action) => items.length ? `<div style="display:grid;gap:8px"><div class="row"><div><h2>${title} <span class="sub num">${items.length}</span></h2>${sub ? `<div class="sub">${sub}</div>` : ''}</div>${action || ''}</div>${items.map(t => taskCard(t, m, extraFn ? extraFn(t) : '')).join('')}</div>` : '';
+    return `${head}
+      <div class="card" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
+        <div><b class="num okc" style="font-size:20px">${inGap.length}</b><div class="sub">오늘 틈</div></div>
+        <div><b class="num warn" style="font-size:20px">${out.length}</b><div class="sub">틈 밖</div></div>
+        <div><b class="num" style="font-size:20px;color:var(--amber)">${moved.length}</b><div class="sub">내일로</div></div>
+        <div><b class="num" style="font-size:20px">${done.length}</b><div class="sub">완료</div></div>
+      </div>
+      ${group('오늘 틈에 들어감', `오늘 쓸 수 있는 틈 ${liveN}개 · ${dur(m.usable)}`, inGap)}
+      ${group('틈 밖 · 아직 남은 과제', '오늘 틈은 마감이 더 가까운 일이 먼저 써요', out, t => `<div style="margin-top:8px"><button class="btn small ghost" data-act="move" data-id="${t.id}">내일 틈에 넣기</button></div>`, out.length > 1 ? '<button class="btn small" data-act="moveAll">모두 내일 틈에</button>' : '')}
+      ${group('내일 틈으로 옮김', '', moved, t => `<button class="link" data-act="unmove" data-id="${t.id}">오늘로 되돌리기</button>`)}
+      ${group('완료', '', done)}`;
+  }
+
+}
+
+/* ---------- plan ---------- */
+function vPlan(m) {
+  const evs = [...S.tomorrow].sort((a, b) => a.start - b.start), moved = byDue(S.tasks.filter(t => t.moved));
+  let rows = '';
+  evs.forEach((e, i) => {
+    rows += `<div class="time num">${hm(e.start)}</div><div class="ncard"><b>${esc(e.name)}</b><div class="sub">${esc(e.kind)} · ~${hm(e.end)}</div></div>`;
+    const g = m.tgaps.find(x => x.from.id === e.id);
+    if (g) rows += `<div class="time num" style="color:var(--mint)">${hm(g.start)}</div><div class="ngap"><div class="row"><b style="color:var(--mint)">틈 · 실제 ${dur(g.usable)}</b><span class="sub">빈 시간 ${dur(g.raw)}</span></div><div class="sub">${cutText(g)} 제외</div>
+      ${moved.map(t => `<div class="ntask"><div><b>${esc(t.name)}</b><div style="font-size:12px">오늘에서 옮김 · 마감 ${dueTxt(Math.max(0, t.due - 1))}</div></div><b style="color:var(--amber);font-size:12px;white-space:nowrap">이어서 하기</b></div>`).join('') || '<div class="sub">아직 넣은 할 일이 없어요. 할 일 탭에서 "내일 틈에 넣기"를 눌러 보세요.</div>'}</div>`;
+    if (i === evs.length - 1) rows += `<div class="time num">${hm(e.end)}</div><div class="ngap empty"><div class="row"><span>틈 · 비워 둠</span><span class="sub">휴식</span></div></div>`;
+  });
+  return `<div><div class="eyebrow">오늘 밤 21:30 · 5분이면 끝나요</div><h1>내일 계획하기</h1><div class="eyebrow">10월 10일 토요일</div></div>
+    <div class="steps" aria-hidden="true"><i class="done"></i><i class="done"></i><i></i></div>
+    <div class="sub">1 일정 확인 · <b style="color:var(--night-ink)">2 할 일 배치</b> · 3 알림 설정</div>
+    <div class="tl">${rows}</div>
+    <div class="ncard"><b>남은 할 일 중 마감이 가까운 것</b><div class="sub">${esc(S.upcoming[0].name)} · D-${S.upcoming[0].due - 1} → 일요일 틈에 시작 제안</div></div>
+    <button class="btn block" data-act="go" data-v="alerts">다음: 알림 설정</button>`;
+}
+
+/* ---------- alerts ---------- */
+function vAlerts(m) {
+  const list = [], dueToday = S.tasks.filter(t => !t.moved && t.due === 0 && t.status !== 'done');
+  list.push({t:480, k:'오늘 요약', msg:`오늘 쓸 수 있는 시간은 ${dur(m.usable)}, 오늘 마감인 할 일은 ${dueToday.length}개예요.`});
+  if (S.notif.gap) m.gaps.filter(g => g.usable > 0).forEach(g => {
+    const rec = m.active.find(t => m.place[t.id] === g.from.id);
+    list.push({t:g.start - 10, k:'틈 시작 전', hl:true, msg:`10분 뒤 ${dur(g.usable)}짜리 틈이 생겨요.` + (rec ? ` 마감이 가까운 ${rec.name}부터 시작해 볼까요?` : '')});
+  });
+  if (S.notif.depart) m.gaps.filter(g => g.travel > 0).forEach(g => list.push({t:g.end - g.travel, k:'출발 알림', warn:true, msg:`지금 출발해야 ${hm(g.end)} ${g.to.name}에 늦지 않아요. 이동 ${g.travel}분.`}));
+  if (S.notif.due && dueToday[0]) list.push({t:1200, k:'마감 알림', warn:true, msg:`${dueToday[0].name} 마감까지 4시간 남았어요.`});
+  if (S.notif.plan) list.push({t:S.sleep.bed - 60, k:'내일 계획', dark:true, msg:`내일 일정 ${S.tomorrow.length}개, 틈 ${m.tgaps.length}개. 5분만 계획해 볼까요?`});
+  list.sort((a, b) => a.t - b.t);
+  const opt = (id, label) => `<label class="check" for="n_${id}"><span>${label}</span><input type="checkbox" id="n_${id}" data-act="notif" data-k="${id}" ${S.notif[id]?'checked':''}></label>`;
+  return `<div><div class="eyebrow">오늘 받을 알림 ${list.length}개 · 틈이 바뀌면 시간도 같이 바뀌어요</div><h1>알림</h1></div>
+    <div style="display:grid;gap:10px">${list.map(a => `<div class="alert ${a.hl?'hl':''} ${a.dark?'dark':''}"><div class="row"><span class="k ${a.hl?'okc':''} ${a.warn?'warn':''}">${a.k}</span><span class="k num ${a.hl?'okc':''} ${a.warn?'warn':''}">${hm(a.t)}</span></div><div style="font-weight:600">${esc(a.msg)}</div></div>`).join('')}</div>
+    <h2>알림 설정</h2>
+    <div>${opt('gap','틈 시작 10분 전')}${opt('depart','이동 시간을 고려한 출발 알림')}${opt('due','마감 알림')}${opt('plan','전날 계획 알림 · 21:30')}</div>`;
+}
+
+/* ---------- recap & story ---------- */
+function stats(m) {
+  const live = m.gaps.filter(g => g.usable > 0);
+  const filled = live.filter(g => S.used[g.from.id]).reduce((s, g) => s + g.usable, 0);
+  const rate = m.usable ? Math.round(filled / m.usable * 100) : 0;
+  return {live, filled, rate, done: S.tasks.filter(t => t.status === 'done').length, doing: S.tasks.filter(t => t.status === 'doing').length};
+}
+function vRecap(m) {
+  const s = stats(m), C = 2 * Math.PI * 46;
+  return `<div class="row"><span class="eyebrow">10월 9일 금요일 · 23:00</span><button class="link" data-act="go" data-v="today" style="color:var(--night-muted)">닫기</button></div>
+    <div><h1>오늘의 틈 리포트</h1><div class="sub">시작한 틈과 끝낸 일을 모아 봤어요. 다른 화면에서 바꾸면 여기 숫자도 바뀌어요.</div></div>
+    <div class="ncard row" style="justify-content:flex-start;gap:18px;padding:18px">
+      <div class="ring"><svg width="110" height="110" viewBox="0 0 110 110" aria-hidden="true"><circle cx="55" cy="55" r="46" fill="none" stroke="var(--night)" stroke-width="12"/><circle cx="55" cy="55" r="46" fill="none" stroke="var(--mint)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * s.rate / 100} ${C}" transform="rotate(-90 55 55)"/></svg><b class="num">${s.rate}%</b></div>
+      <div><div class="sub">쓸 수 있던 시간 ${dur(m.usable)} 중</div><div class="num" style="font-size:24px;font-weight:700;color:var(--mint);line-height:1.2">${dur(s.filled)}</div><div>틈을 채웠어요</div></div></div>
+    <div class="stats"><div><b class="num">${s.done}개</b><span>끝낸 할 일</span></div><div><b class="num">${s.doing}개</b><span>이어서 할 일</span></div><div><b class="num">${s.live.length}개</b><span>오늘 틈</span></div></div>
+    <h2>틈별 기록</h2>
+    <div style="display:grid;gap:10px">${m.gaps.map(g => `<div><div class="row" style="font-size:13px"><span class="num">${hm(g.start)} 틈 · ${g.usable ? (S.used[g.from.id] ? '사용함' : '비어 있음') : '이동·식사'}</span><b class="num" style="color:${S.used[g.from.id]?'var(--mint)':'var(--night-muted)'}">${dur(S.used[g.from.id] ? g.usable : 0)} / ${dur(g.usable)}</b></div><div class="mini"><span style="width:${g.usable && S.used[g.from.id] ? 100 : 0}%"></span></div></div>`).join('')}</div>
+    <button class="btn block" data-act="go" data-v="story">인스타 스토리 카드 만들기</button>
+    <div class="sub" style="text-align:center">과목 이름은 빼고, 숫자만 담아요</div>`;
+}
+function vStory(m) {
+  const s = stats(m), tot = 1290 - 540;
+  const segs = [];
+  [...S.events].sort((a, b) => a.start - b.start).forEach(e => {
+    segs.push(`<span style="flex:${e.end - e.start};background:#0f3f30"></span>`);
+    const g = m.gaps.find(x => x.from.id === e.id);
+    if (g && g.raw) segs.push(`<span style="flex:${g.raw};background:${S.used[g.from.id] ? '#ffffff' : 'rgb(255 255 255 / .25)'}"></span>`);
+  });
+  return `<div class="row"><button class="link" data-act="go" data-v="recap" style="font-size:22px;text-decoration:none;color:var(--ink);padding:0">‹</button><b>스토리 카드 미리보기</b><span></span></div>
+    <div class="story">
+      <div class="row"><b>10.09 FRI</b><span style="color:#bdebd8;font-size:13px">오늘의 틈</span></div>
+      <div style="margin-top:auto;color:#d7f2e6;font-size:17px;font-weight:600">흘려보낼 뻔한 틈을</div>
+      <div class="pct num">${s.rate}<small>%</small></div>
+      <div style="font-size:21px;font-weight:700">채워 쓴 하루</div>
+      <div class="sbar" aria-hidden="true">${segs.join('')}</div>
+      <div class="row" style="font-size:11px;color:#d7f2e6;margin-top:6px"><span>■ 정해진 일정 · □ 채운 틈</span><span>9시 → 21시</span></div>
+      <div class="sstats"><div><b class="num">${dur(s.filled)}</b>찾은 시간</div><div><b class="num">${s.done}개</b>끝낸 할 일</div><div><b class="num">5일</b>연속 계획</div></div>
+      <div class="row" style="margin-top:auto;padding-top:16px;align-items:flex-end"><div style="font-size:13px;color:#d7f2e6">#나만의틈 #갓생<br><span style="font-size:12px;color:#bdebd8">바쁜 일상 속, 나만의 틈을 찾다.</span></div><b style="font-size:30px">틈</b></div>
+    </div>
+    <button class="btn block" data-act="saveImg">이미지로 저장하기</button>
+    <div id="storyOut" class="sub" style="text-align:center"></div>`;
+}
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+async function drawStory() {
+  const m = model(), s = stats(m), F = '"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+  try { await Promise.all([document.fonts.load('700 60px "IBM Plex Sans KR"'), document.fonts.load('400 40px "IBM Plex Sans KR"')]); } catch (e) {}
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1920;
+  const x = c.getContext('2d');
+  x.fillStyle = '#1a6b50'; x.fillRect(0, 0, 1080, 1920);
+  const txt = (t, px, py, size, color, weight = 400, align = 'left') => { x.font = `${weight} ${size}px ${F}`; x.fillStyle = color; x.textAlign = align; x.fillText(t, px, py); return x.measureText(t).width; };
+  txt('10.09 FRI', 90, 170, 54, '#ffffff', 700);
+  txt('오늘의 틈', 990, 170, 40, '#bdebd8', 400, 'right');
+  txt('흘려보낼 뻔한 틈을', 90, 760, 58, '#d7f2e6', 600);
+  const w = txt(String(s.rate), 80, 1090, 360, '#ffffff', 700);
+  txt('%', 80 + w + 10, 1090, 170, '#ffffff', 700);
+  txt('채워 쓴 하루', 90, 1200, 76, '#ffffff', 700);
+  const parts = [];
+  [...S.events].sort((a, b) => a.start - b.start).forEach(e => {
+    parts.push({v: e.end - e.start, c: '#0f3f30'});
+    const g = m.gaps.find(q => q.from.id === e.id);
+    if (g && g.raw) parts.push({v: g.raw, c: S.used[g.from.id] ? '#ffffff' : 'rgba(255,255,255,0.25)'});
+  });
+  const total = parts.reduce((a, p) => a + p.v, 0), gapPx = 8, avail = 900 - gapPx * (parts.length - 1);
+  let px = 90;
+  parts.forEach(p => { const pw = avail * p.v / total; x.fillStyle = p.c; rr(x, px, 1260, pw, 90, 14); x.fill(); px += pw + gapPx; });
+  txt('■ 정해진 일정   □ 채운 틈', 90, 1410, 32, '#d7f2e6');
+  txt('9시 → 21시', 990, 1410, 32, '#d7f2e6', 400, 'right');
+  const boxes = [[dur(s.filled), '찾은 시간'], [s.done + '개', '끝낸 할 일'], ['5일', '연속 계획']], bw = (900 - 48) / 3;
+  boxes.forEach(([v, l], i) => {
+    const bx = 90 + i * (bw + 24);
+    x.fillStyle = 'rgba(15,63,48,0.6)'; rr(x, bx, 1470, bw, 190, 28); x.fill();
+    txt(v, bx + bw / 2, 1570, v.length > 6 ? 50 : 60, '#ffffff', 700, 'center');
+    txt(l, bx + bw / 2, 1625, 32, '#bdebd8', 400, 'center');
+  });
+  txt('#나만의틈 #갓생', 90, 1780, 42, '#d7f2e6', 600);
+  txt('바쁜 일상 속, 나만의 틈을 찾다.', 90, 1835, 32, '#bdebd8');
+  txt('틈', 990, 1840, 120, '#ffffff', 700, 'right');
+  return c;
+}
+
+/* ---------- shell ---------- */
+const ICON = {
+  today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
+  tasks:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>',
+  plan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>',
+  alerts:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>',
+  recap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5V12l6 4"/></svg>'
+};
+const PICK = [['home','홈 위젯'],['settings','설정 · 시간표 불러오기'],['week','주간 시간표'],['today','오늘 일정'],['gap','틈 상세'],['tasks','할 일'],['plan','전날 계획'],['alerts','알림'],['recap','리포트'],['story','스토리 카드']];
+function ttStart(img) {
+  S.tt = {stage:'reading', img, rows:[]}; render();
+  clearTimeout(ttStart.h);
+  ttStart.h = setTimeout(() => { S.tt.stage = 'review'; S.tt.rows = SAMPLE_TT.map(r => ({...r})); if (S.view === 'settings') render(); }, 1600);
+}
+function render() {
+  const m = model(), v = S.view, app = $('#app'), keep = app.scrollTop;
+  app.className = 'screen' + (v === 'home' ? ' home' : (v === 'plan' || v === 'recap') ? ' night' : '');
+  app.innerHTML = v === 'home' ? vHome(m) : v === 'settings' ? vSettings() : v === 'gap' ? vGap(m) : v === 'tasks' ? vTasks(m) : v === 'plan' ? vPlan(m) : v === 'alerts' ? vAlerts(m) : v === 'recap' ? vRecap(m) : v === 'story' ? vStory(m) : vToday(m);
+  if (render.last === v + S.sub) app.scrollTop = keep; render.last = v + S.sub;
+  const pk = v === 'today' && S.sub === 'week' ? 'week' : v;
+  $('#picker').innerHTML = PICK.map(([k, l]) => `<button data-act="screen" data-v="${k}" class="${pk===k?'on':''}" aria-current="${pk===k}">${l}</button>`).join('');
+  const tabs = [['today','오늘'],['tasks','할 일'],['plan','내일 계획'],['alerts','알림'],['recap','리포트']];
+  const cur = v === 'gap' || v === 'settings' ? 'today' : v === 'story' ? 'recap' : v;
+  $('#tabs').hidden = v === 'home';
+  $('#tabs').innerHTML = tabs.map(([k, l]) => `<button class="tab ${cur===k?'on':''}" data-act="go" data-v="${k}" aria-current="${cur===k?'page':'false'}">${ICON[k]}${l}</button>`).join('');
+}
+function startTask(id, fromGap) {
+  const t = S.tasks.find(x => x.id === id); t.status = 'doing';
+  if (fromGap) S.used[fromGap] = true;
+  return t;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, id = b.dataset.id;
+  if (act === 'notif') { S.notif[b.dataset.k] = b.checked; render(); return; }
+  if (act === 'go') { S.view = b.dataset.v; if (S.view === 'today') S.sub = 'list'; if (S.view === 'settings') S.setPage = 'main'; S.editing = null; S.addEv = false; }
+  else if (act === 'screen') {
+    const k = b.dataset.v;
+    if (k === 'week' || k === 'today') { S.view = 'today'; S.sub = k === 'week' ? 'week' : 'list'; }
+    else { S.view = k; if (k === 'settings') S.setPage = 'main'; if (k === 'gap') { const g = model().gaps.find(x => x.usable > 0); S.gapFrom = g ? g.from.id : 'e1'; } }
+  }
+  else if (act === 'reset') { S = fresh(); toast('처음 상태로 돌렸어요.'); }
+  else if (act === 'sub') S.sub = b.dataset.v;
+  else if (act === 'wmode') { S.wmode = b.dataset.v; S.pick = null; }
+  else if (act === 'pick') S.pick = Number(b.dataset.v);
+  else if (act === 'applyPick') {
+    const e1 = ev('e1'), m0 = model(), before = m0.gaps.find(x => x.from.id === 'e1').usable;
+    e1.end = S.pick ?? (S.wmode === 'early' ? 600 : 645); S.wmode = 'result'; S.pick = null;
+    const after = model().gaps.find(x => x.from.id === 'e1').usable;
+    toast(after === before ? '예정대로 끝난 걸로 기록했어요.' : `틈이 ${dur(before)}에서 ${dur(after)}로 바뀌었어요.`);
+  }
+  else if (act === 'undoE1') { const e1 = ev('e1'); e1.end = e1.base; S.wmode = 'live'; toast('원래 시간으로 되돌렸어요.'); }
+  else if (act === 'undoAll') { S.events.forEach(x => x.end = x.base); S.editing = null; S.wmode = 'live'; toast('모든 일정을 원래 시간으로 되돌렸어요.'); }
+  else if (act === 'edit') S.editing = S.editing === id ? null : id;
+  else if (act === 'shift') {
+    const x = ev(id), d = Number(b.dataset.d), m0 = model(), g0 = m0.gaps.find(g => g.from.id === id);
+    x.end = Math.max(x.start + 10, x.base + d);
+    const g1 = model().gaps.find(g => g.from.id === id);
+    if (id === 'e1') S.wmode = d ? 'result' : 'live';
+    if (!d) S.editing = null;
+    toast(g1 ? `${hm(g1.start)} 틈이 ${dur(g0.usable)} → ${dur(g1.usable)}로 바뀌었어요.` : `${x.name} 끝나는 시간을 ${hm(x.end)}로 바꿨어요.`);
+  }
+  else if (act === 'gap') { S.view = 'gap'; S.gapFrom = b.dataset.from; }
+  else if (act === 'start') { const t = startTask(id, S.gapFrom); toast(`${t.name} 시작! 멈추면 진행 중으로 남아요.`); }
+  else if (act === 'startFrom') { const t = model().active[0]; if (t) { startTask(t.id, b.dataset.from); S.view = 'tasks'; toast(`${t.name} 시작했어요.`); } }
+  else if (act === 'cycle') {
+    const t = S.tasks.find(x => x.id === id), next = {todo:'doing', doing:'done', done:'todo'}[t.status];
+    if (next === 'doing') { startTask(id, null); const m0 = model(); const g = m0.gaps.find(x => x.usable > 0 && !S.used[x.from.id]); if (g) S.used[g.from.id] = true; }
+    else t.status = next;
+    toast(`${t.name}: ${ST[t.status]}`);
+  }
+  else if (act === 'pickSchool') {
+    const before = model().usable, s = SCHOOL_INDEX.find(x => x.id === id);
+    S.schoolPick = s ? s.id : null; S.school = s ? s.data : null; S.schQ = '';
+    const after = model().usable;
+    toast(!s ? '학교 설정을 해제했어요.' : `${schFull(s)}로 정했어요.` + (after !== before ? ` 오늘 틈이 ${dur(before)} → ${dur(after)}로 바뀌었어요.` : s.data ? ' 캠퍼스 안 이동은 이제 도보로 계산해요.' : ' 건물 지도가 준비되면 도보로 계산해요.'));
+  }
+  else if (act === 'addEv') S.addEv = !S.addEv;
+  else if (act === 'delEv') {
+    const fe = S.events.find(x => x.id === id);
+    if (fe) { S.events = S.events.filter(x => x.id !== id); delete S.used[id]; toast(`${fe.name}을(를) 지우고 틈을 다시 계산했어요.`); }
+    else { const c = S.custom.find(x => x.id === id); S.custom = S.custom.filter(x => x.id !== id); if (c) toast(`${c.n}을(를) 시간표에서 지웠어요.`); }
+  }
+  else if (act === 'setPage') { S.view = 'settings'; S.setPage = b.dataset.v; }
+  else if (act === 'ttSample') { ttStart(null); return; }
+  else if (act === 'ttAgain') { clearTimeout(ttStart.h); S.tt = {stage:'idle', img:null, rows:[]}; }
+  else if (act === 'ttDel') { S.tt.rows.splice(Number(b.dataset.i), 1); }
+  else if (act === 'ttApply') {
+    S.timetable = S.tt.rows.map(r => ({...r, flag:false}));
+    S.tt = {stage:'idle', img:null, rows:[]}; S.justImported = true; S.view = 'today'; S.sub = 'week';
+    toast(`수업 ${S.timetable.length}개를 시간표에 넣었어요.`);
+  }
+  else if (act === 'ttClear') { S.timetable = null; S.justImported = false; toast('시간표를 비웠어요.'); }
+  else if (act === 'filter') S.filter = b.dataset.v;
+  else if (act === 'move') { S.tasks.find(t => t.id === id).moved = true; toast('내일 틈에 넣었어요. 내일 계획에서 볼 수 있어요.'); }
+  else if (act === 'tview') { S.tview = b.dataset.v; S.filter = 'all'; }
+  else if (act === 'moveAll') {
+    const m0 = model(), out = m0.active.filter(t => t.status !== 'doing' && !m0.place[t.id]);
+    out.forEach(t => { S.tasks.find(x => x.id === t.id).moved = true; });
+    toast(`${out.length}개를 내일 틈에 넣었어요. 내일 계획에서 볼 수 있어요.`);
+  }
+  else if (act === 'unmove') { S.tasks.find(t => t.id === id).moved = false; }
+  else if (act === 'addOpen') S.addOpen = !S.addOpen;
+  else if (act === 'saveImg') { toast('시연용이에요. 실제 앱에서는 이 카드가 사진첩에 이미지로 저장돼요.'); return; }
+  else return;
+  render();
+});
+document.addEventListener('change', e => {
+  const k = e.target.dataset.sl;
+  if (k) { S.sleep[k] = Number(e.target.value); render(); return; }
+  if (e.target.dataset.calc) { S.calc[e.target.dataset.calc] = e.target.value; render(); return; }
+  if (e.target.id !== 'ttFile' || !e.target.files[0]) return;
+  const f = e.target.files[0];
+  if (!f.type.startsWith('image/')) { toast('이미지 파일만 올릴 수 있어요.'); return; }
+  const r = new FileReader();
+  r.onload = () => ttStart(r.result);
+  r.onerror = () => toast('이미지를 읽지 못했어요. 다른 파일로 다시 올려 주세요.');
+  r.readAsDataURL(f);
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'schSearch') { S.schQ = e.target.value; const r = $('#schResults'); if (r) r.innerHTML = schResults(); return; }
+  const i = e.target.dataset.tt;
+  if (i != null && S.tt.rows[i]) S.tt.rows[i].l = e.target.value;
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'evForm') {
+    const name = $('#evName').value.trim(), kind = $('#evKind').value, d = Number($('#evDay').value);
+    const s = toMin($('#evStart').value), en = toMin($('#evEnd').value), loc = $('#evLoc').value.trim();
+    if (!name) { toast('일정 이름을 적어 주세요.'); return; }
+    if (!(en > s)) { toast('끝나는 시간이 시작 시간보다 늦어야 해요.'); return; }
+    if (s < 540 || en > 1320) { toast('시간표에는 9시부터 22시 사이 일정만 넣을 수 있어요.'); return; }
+    const hit = dayItems(d).find(x => s < x.e && en > x.s);
+    if (hit) { toast(`${DAYS[d]}요일 ${hm(hit.s)}–${hm(hit.e)}에 ${hit.n}이(가) 있어요. 시간을 바꿔 주세요.`); return; }
+    const nid = 'u' + (++uid);
+    if (d === 4) {
+      const before = model().usable;
+      S.events.push({id:nid, name, kind, start:s, end:en, base:en, loc: loc || '장소 미정', prep:0, custom:true});
+      const after = model().usable;
+      toast(after === before ? `${name}을(를) 오늘 일정에 넣었어요.` : `${name}을(를) 넣었어요. 오늘 틈이 ${dur(before)} → ${dur(after)}로 바뀌었어요.`);
+    } else {
+      S.custom.push({id:nid, d, s, e:en, n:name, l:loc, k:kind});
+      toast(`${DAYS[d]}요일 시간표에 ${name}을(를) 넣었어요.`);
+    }
+    S.addEv = false; render(); return;
+  }
+  if (e.target.id !== 'tkForm') return;
+  const name = $('#tkName').value.trim();
+  if (!name) { toast('할 일 이름을 적어 주세요.'); return; }
+  S.tasks.push({id:'k' + (++uid), name, due:Number($('#tkDue').value), status:'todo', moved:false});
+  S.addOpen = false; toast(`${name}을(를) 추가했어요. 마감 순으로 다시 정렬했어요.`); render();
+});
+render();
+</script>
+
+</body></html>
